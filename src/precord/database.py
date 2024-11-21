@@ -32,9 +32,13 @@ async def database_setup(registry: svcs.Registry) -> None:
         connection = await container.aget(Connection)
         return await connection.prepare(
             """INSERT INTO pending
-               VALUES ($1, $2, $3::timestamptz, $4, $5::bigint[])
-               ON CONFLICT (order_code) DO UPDATE SET
-               state_token=$2, created=$3::timestamptz, nickname=$4, roles=$5::bigint[]""",
+               (order_code, position, state_token, created, nickname, roles)
+               VALUES ($1, $2, $3, $4::timestamptz, $5, $6::bigint[])
+               ON CONFLICT (order_code, position) DO UPDATE SET
+               state_token=$3,
+               created=$4::timestamptz,
+               nickname=$5,
+               roles=$6::bigint[]""",
         )
 
     registry.register_factory(Insert, prepare_insert)
@@ -44,13 +48,16 @@ async def database_setup(registry: svcs.Registry) -> None:
     ) -> PreparedStatement:  # type: ignore[type-arg]
         connection = await container.aget(Connection)
         return await connection.prepare(
-            "SELECT order_code, created, nickname, roles FROM pending WHERE state_token = $1",
+            """SELECT order_code, position, created, nickname, roles
+                FROM pending WHERE state_token = $1""",
         )
 
     registry.register_factory(SelectByStateToken, prepare_select_by_state_token)
 
     async def prepare_delete(container: svcs.Container) -> PreparedStatement:  # type: ignore[type-arg]
         connection = await container.aget(Connection)
-        return await connection.prepare("DELETE FROM pending WHERE order_code = $1")
+        return await connection.prepare(
+            """DELETE FROM pending WHERE order_code = $1 AND position = $2""",
+        )
 
     registry.register_factory(Delete, prepare_delete)

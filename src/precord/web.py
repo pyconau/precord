@@ -189,6 +189,7 @@ async def join(
         [
             (
                 payload["order"],
+                int(payload["position"]),
                 state_token,
                 datetime.now(tz=UTC),
                 nickname,
@@ -242,7 +243,7 @@ async def redirect(
             status_code=HTTPStatus.BAD_REQUEST,
         )
 
-    await delete.executemany([(row["order_code"],)])
+    await delete.executemany([(row["order_code"], row["position"])])
 
     if datetime.now(tz=UTC) - row["created"] > STATE_TOKEN_LIFETIME:
         return HTMLResponse(
