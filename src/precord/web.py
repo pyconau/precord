@@ -137,10 +137,12 @@ async def join(
     state token, in the database. The user is then redirected into Discord's OAuth2
     flow.
     """
-    settings, client, error_template = await services.aget(
+    settings, client, error_template, select_active, insert_pending = await services.aget(
         Settings,
         httpx.AsyncClient,
         ErrorTemplate,
+        database.SelectActive,
+        database.InsertPending,
     )
 
     if not token:
@@ -178,14 +180,20 @@ async def join(
             status_code=HTTPStatus.UNAUTHORIZED,
         )
 
+    row = await select_active.fetchrow(payload["order"], int(payload["position"]))
+    if row is not None:
+        return RedirectResponse(
+            f"https://discord.com/channels/{settings.discord_guild_id}/{settings.discord_welcome_channel_id}",
+            status_code=HTTPStatus.FOUND,
+        )
+
     items = {position["item"] for position in order["positions"] if not position["canceled"]}
     answers = {a["question_identifier"]: a["answer"] for a in position["answers"]}
     nickname = values.generate_nickname(answers)
     roles = values.generate_role_list(items, answers)
 
     state_token = values.generate_state_token()
-    insert = await services.aget(database.Insert)
-    await insert.executemany(
+    await insert_pending.executemany(
         [
             (
                 payload["order"],
@@ -228,22 +236,25 @@ async def redirect(
     Lastly the user is redirected to the Discord web app and the #welcome channel in
     our server.
     """
-    settings, client, select, delete, error_template = await services.aget(
-        Settings,
-        httpx.AsyncClient,
-        database.SelectByStateToken,
-        database.Delete,
-        ErrorTemplate,
+    settings, client, select_pending, delete_pending, insert_active, error_template = (
+        await services.aget(
+            Settings,
+            httpx.AsyncClient,
+            database.SelectPendingByStateToken,
+            database.DeletePending,
+            database.InsertActive,
+            ErrorTemplate,
+        )
     )
 
-    row = await select.fetchrow(state)
+    row = await select_pending.fetchrow(state)
     if row is None:
         return HTMLResponse(
             error_template.render(message="Registration is in invalid state"),
             status_code=HTTPStatus.BAD_REQUEST,
         )
 
-    await delete.executemany([(row["order_code"], row["position"])])
+    await delete_pending.executemany([(row["order_code"], row["position"])])
 
     if datetime.now(tz=UTC) - row["created"] > STATE_TOKEN_LIFETIME:
         return HTMLResponse(
@@ -270,6 +281,19 @@ async def redirect(
     )
     response.raise_for_status()
     user = response.json()
+
+    await insert_active.executemany(
+        [
+            (
+                row["order_code"],
+                row["position"],
+                str(user["id"]),
+                row["created"],
+                row["nickname"],
+                row["roles"],
+            ),
+        ],
+    )
 
     parameters = {
         "access_token": token["access_token"],

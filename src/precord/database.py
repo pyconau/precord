@@ -12,9 +12,12 @@ if TYPE_CHECKING:
 
     import svcs
 
-Insert = NewType("Insert", PreparedStatement)  # type: ignore[type-arg]
-SelectByStateToken = NewType("SelectByStateToken", PreparedStatement)  # type: ignore[type-arg]
-Delete = NewType("Delete", PreparedStatement)  # type: ignore[type-arg]
+InsertPending = NewType("InsertPending", PreparedStatement)  # type: ignore[type-arg]
+SelectPendingByStateToken = NewType("SelectPendingByStateToken", PreparedStatement)  # type: ignore[type-arg]
+DeletePending = NewType("DeletePending", PreparedStatement)  # type: ignore[type-arg]
+
+InsertActive = NewType("InsertActive", PreparedStatement)  # type: ignore[type-arg]
+SelectActive = NewType("SelectActive", PreparedStatement)  # type: ignore[type-arg]
 
 
 async def database_setup(registry: svcs.Registry) -> None:
@@ -28,7 +31,7 @@ async def database_setup(registry: svcs.Registry) -> None:
 
     registry.register_factory(Connection, acquire_connection)
 
-    async def prepare_insert(container: svcs.Container) -> PreparedStatement:  # type: ignore[type-arg]
+    async def prepare_insert_pending(container: svcs.Container) -> PreparedStatement:  # type: ignore[type-arg]
         connection = await container.aget(Connection)
         return await connection.prepare(
             """INSERT INTO pending
@@ -41,9 +44,9 @@ async def database_setup(registry: svcs.Registry) -> None:
                roles=$6::bigint[]""",
         )
 
-    registry.register_factory(Insert, prepare_insert)
+    registry.register_factory(InsertPending, prepare_insert_pending)
 
-    async def prepare_select_by_state_token(
+    async def prepare_select_pending_by_state_token(
         container: svcs.Container,
     ) -> PreparedStatement:  # type: ignore[type-arg]
         connection = await container.aget(Connection)
@@ -52,12 +55,12 @@ async def database_setup(registry: svcs.Registry) -> None:
                 FROM pending WHERE state_token = $1""",
         )
 
-    registry.register_factory(SelectByStateToken, prepare_select_by_state_token)
+    registry.register_factory(SelectPendingByStateToken, prepare_select_pending_by_state_token)
 
-    async def prepare_delete(container: svcs.Container) -> PreparedStatement:  # type: ignore[type-arg]
+    async def prepare_delete_pending(container: svcs.Container) -> PreparedStatement:  # type: ignore[type-arg]
         connection = await container.aget(Connection)
         return await connection.prepare(
             """DELETE FROM pending WHERE order_code = $1 AND position = $2""",
         )
 
-    registry.register_factory(Delete, prepare_delete)
+    registry.register_factory(DeletePending, prepare_delete_pending)
