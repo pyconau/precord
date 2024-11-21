@@ -34,6 +34,7 @@ TEAM_ROLES = {
     "AV Team": [ROLE_IDS["av"]],
     "Education": [ROLE_IDS["specialist"], ROLE_IDS["education"]],
     "Scientific Python": [ROLE_IDS["specialist"], ROLE_IDS["scientific"]],
+    "All Things Data": [ROLE_IDS["specialist"], ROLE_IDS["scientific"]],
     "DevOops": [ROLE_IDS["specialist"], ROLE_IDS["devoops"]],
 }
 
