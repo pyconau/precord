@@ -81,7 +81,16 @@ async def lifespan(
     registry.register_value(Settings, settings)
     registry.register_factory(httpx.AsyncClient, lambda: httpx.AsyncClient())
 
-    await database.database_setup(registry, settings.database_url)
+    try:
+        await database.database_setup(registry, settings.database_url)
+    except database.DatabaseUnavailableError as exc:
+        # Log the cause on its own line and stop. Gunicorn's master does not
+        # retry a worker that fails to boot, so the container exits rather than
+        # serving requests it cannot answer. Whatever supervises the container
+        # decides whether to restart it; a capped restart policy avoids a loop
+        # when the database is genuinely gone.
+        logger.error("%s", exc)  # noqa: TRY400
+        raise SystemExit(1) from None
 
     registry.register_factory(
         Environment,
@@ -121,6 +130,17 @@ async def custom_500_handler(request: Request, _exc: HTTPException) -> HTMLRespo
             error_template.render(message="An internal error occurred"),
             status_code=HTTPStatus.BAD_REQUEST,
         )
+
+
+@app.get("/health")
+async def health() -> dict[str, str]:
+    """Report that the process is alive.
+
+    Liveness only: this deliberately does not touch the database, so a brief
+    database blip does not take the container out of rotation. Startup already
+    guarantees the pool connected at least once.
+    """
+    return {"status": "ok"}
 
 
 @app.get("/join", response_model=None)

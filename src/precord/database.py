@@ -2,15 +2,43 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, NewType, cast
+from urllib.parse import urlsplit
 
-from asyncpg import Connection, create_pool
+from asyncpg import Connection, PostgresError, create_pool
 from asyncpg.prepared_stmt import PreparedStatement
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
     import svcs
+
+logger = logging.getLogger(__name__)
+
+CONNECT_TIMEOUT = 15.0
+
+
+class DatabaseUnavailableError(RuntimeError):
+    """Raised when the database cannot be reached during startup."""
+
+
+def describe_dsn(dsn: str) -> str:
+    """Describe a DSN as host:port/database, discarding any credentials."""
+    try:
+        parts = urlsplit(dsn)
+    except ValueError:
+        return "<unparseable DSN>"
+
+    if not parts.scheme:
+        return "<malformed DSN>"
+
+    if not parts.hostname:
+        return "<local socket>"
+
+    port = f":{parts.port}" if parts.port else ""
+    return f"{parts.hostname}{port}{parts.path}"
+
 
 InsertPending = NewType("InsertPending", PreparedStatement)  # type: ignore[type-arg]
 SelectPendingByStateToken = NewType("SelectPendingByStateToken", PreparedStatement)  # type: ignore[type-arg]
@@ -21,9 +49,28 @@ SelectActive = NewType("SelectActive", PreparedStatement)  # type: ignore[type-a
 
 
 async def database_setup(registry: svcs.Registry, dsn: str) -> None:
-    """Set up all the database entries we need in our registry."""
-    pool = await create_pool(dsn, command_timeout=60)
-    assert pool is not None
+    """Set up all the database entries we need in our registry.
+
+    Raises DatabaseUnavailableError if the database cannot be reached. The pool
+    opens its connections eagerly, so an unreachable database fails here rather
+    than on the first request. We let that stop startup deliberately: serving
+    with no database would mean turning every attendee away. The error is
+    reported as a single explicit line so the cause is visible in the container
+    log without reading a traceback.
+    """
+    target = describe_dsn(dsn)
+    try:
+        pool = await create_pool(dsn, command_timeout=60, timeout=CONNECT_TIMEOUT)
+    except (OSError, PostgresError, TimeoutError) as exc:
+        logger.debug("Database connection traceback for %s", target, exc_info=True)
+        message = f"FATAL: cannot reach the database at {target}: {exc}"
+        raise DatabaseUnavailableError(message) from exc
+
+    if pool is None:  # pragma: no cover - only when create_pool is patched out
+        message = f"FATAL: no connection pool was created for {target}"
+        raise DatabaseUnavailableError(message)
+
+    logger.info("Connected to the database at %s", target)
 
     async def acquire_connection() -> AsyncGenerator[Connection, None]:  # type: ignore[type-arg]
         async with pool.acquire() as connection:

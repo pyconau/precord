@@ -73,7 +73,4 @@ def generate_role_list(items: set[int], answers: dict[str, Any]) -> list[int]:
         if item in ITEM_IDS["sponsor"]:
             roles.add(ROLE_IDS["sponsor"])
 
-    # if answers.get("sponsor", "") == "True":
-    #     roles.add(ROLE_IDS["sponsor"])
-
     return list(roles)
