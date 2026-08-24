@@ -1,0 +1,11 @@
+.git
+.venv
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+env.sh
+*.pem
+PRECORD_DEPLOYMENT.md

@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     pretix_api_token: str
     pretix_jwt_public_key: str
 
+    database_url: str
+
     state_token_lifetime: timedelta = timedelta(minutes=1800)
 
     @field_serializer("state_token_lifetime")
@@ -75,10 +77,11 @@ async def lifespan(
     registry: svcs.Registry,
 ) -> AsyncGenerator[dict[str, Any], None]:
     """Set up all our services for later use."""
-    registry.register_factory(Settings, lambda: Settings())  # type: ignore[call-arg]
+    settings = Settings()  # type: ignore[call-arg]
+    registry.register_value(Settings, settings)
     registry.register_factory(httpx.AsyncClient, lambda: httpx.AsyncClient())
 
-    await database.database_setup(registry)
+    await database.database_setup(registry, settings.database_url)
 
     registry.register_factory(
         Environment,

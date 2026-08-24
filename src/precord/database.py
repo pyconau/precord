@@ -20,9 +20,9 @@ InsertActive = NewType("InsertActive", PreparedStatement)  # type: ignore[type-a
 SelectActive = NewType("SelectActive", PreparedStatement)  # type: ignore[type-arg]
 
 
-async def database_setup(registry: svcs.Registry) -> None:
+async def database_setup(registry: svcs.Registry, dsn: str) -> None:
     """Set up all the database entries we need in our registry."""
-    pool = await create_pool(database="precord", command_timeout=60)
+    pool = await create_pool(dsn, command_timeout=60)
     assert pool is not None
 
     async def acquire_connection() -> AsyncGenerator[Connection, None]:  # type: ignore[type-arg]
@@ -64,3 +64,27 @@ async def database_setup(registry: svcs.Registry) -> None:
         )
 
     registry.register_factory(DeletePending, prepare_delete_pending)
+
+    async def prepare_insert_active(container: svcs.Container) -> PreparedStatement:  # type: ignore[type-arg]
+        connection = await container.aget(Connection)
+        return await connection.prepare(
+            """INSERT INTO active
+               (order_code, position, user_id, created, nickname, roles)
+               VALUES ($1, $2, $3, $4::timestamptz, $5, $6::bigint[])
+               ON CONFLICT (order_code, position) DO UPDATE SET
+               user_id=$3,
+               created=$4::timestamptz,
+               nickname=$5,
+               roles=$6::bigint[]""",
+        )
+
+    registry.register_factory(InsertActive, prepare_insert_active)
+
+    async def prepare_select_active(container: svcs.Container) -> PreparedStatement:  # type: ignore[type-arg]
+        connection = await container.aget(Connection)
+        return await connection.prepare(
+            """SELECT order_code, position, user_id, created, nickname, roles
+                FROM active WHERE order_code = $1 AND position = $2""",
+        )
+
+    registry.register_factory(SelectActive, prepare_select_active)
