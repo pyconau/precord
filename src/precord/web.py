@@ -160,7 +160,7 @@ async def join(
         )
 
     response = await client.get(
-        f"https://pretix.eu/api/v1/organizers/pyconau/events/2024/orders/{payload['order']}/",
+        f"https://pretix.eu/api/v1/organizers/pyconau/events/2026/orders/{payload['order']}/",
         params={"include_canceled_positions": "true"},
         headers={"authorization": f"Token {settings.pretix_api_token}"},
     )

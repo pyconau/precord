@@ -12,30 +12,36 @@ if TYPE_CHECKING:
 STATE_TOKEN_CHARACTERS = string.ascii_letters + string.digits + ".,-:"
 
 ROLE_IDS = {
-    "volunteer": 1307641013493305379,
-    "core": 1307641013493305380,
-    "av": 1307641013493305378,
-    "specialist": 1307641013258420242,
-    "education": 1307641013258420238,
-    "scientific": 1307641013258420241,
-    "devoops": 1307641013258420240,
-    "speaker": 1307641013493305377,
-    "sprints": 1307641013258420237,
-    "sponsor": 1307641013493305376,
+    "volunteer": 1534168020786614374,
+    "core": 1534168020786614375,
+    "av": 1534168020786614373,
+    "specialist": 1534168020786614372,
+    "education": 1534168020778352824,
+    "dataai": 1535535424229875844,
+    "platformeng": 1535535634750640199,
+    "cybersecurity": 1535535725163061348,
+    "devrel": 1535535987718099005,
+    "rse": 1535536080617472010,
+    "speaker": 1534168020778352830,
+    "sprints": 1534168020778352823,
+    "sponsor": 1534168020778352829,
 }
 ITEM_IDS = {
-    "team_member": {569202, 637767},
-    "speaker": {569203, 637766},
-    "sprints": {569209, 569215, 569216},
+    "team_member": {1122991},
+    "speaker": {826206},
+    "sprints": {826222, 826210},
+    "sponsor": {1102464, 826208},
 }
 TEAM_ROLES = {
     "Volunteer Team": [ROLE_IDS["volunteer"]],
     "Core Team": [ROLE_IDS["core"]],
     "AV Team": [ROLE_IDS["av"]],
     "Education": [ROLE_IDS["specialist"], ROLE_IDS["education"]],
-    "Scientific Python": [ROLE_IDS["specialist"], ROLE_IDS["scientific"]],
-    "All Things Data": [ROLE_IDS["specialist"], ROLE_IDS["scientific"]],
-    "DevOops": [ROLE_IDS["specialist"], ROLE_IDS["devoops"]],
+    "Data & AI": [ROLE_IDS["specialist"], ROLE_IDS["dataai"]],
+    "Platform Engineering": [ROLE_IDS["specialist"], ROLE_IDS["platformeng"]],
+    "Cybersecurity": [ROLE_IDS["specialist"], ROLE_IDS["cybersecurity"]],
+    "Developer Relations": [ROLE_IDS["specialist"], ROLE_IDS["devrel"]],
+    "Research Software Engineering": [ROLE_IDS["specialist"], ROLE_IDS["rse"]],
 }
 
 
@@ -64,8 +70,10 @@ def generate_role_list(items: set[int], answers: dict[str, Any]) -> list[int]:
             roles.add(ROLE_IDS["speaker"])
         if item in ITEM_IDS["sprints"]:
             roles.add(ROLE_IDS["sprints"])
+        if item in ITEM_IDS["sponsor"]:
+            roles.add(ROLE_IDS["sponsor"])
 
-    if answers.get("sponsor", "") == "True":
-        roles.add(ROLE_IDS["sponsor"])
+    # if answers.get("sponsor", "") == "True":
+    #     roles.add(ROLE_IDS["sponsor"])
 
     return list(roles)
