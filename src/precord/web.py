@@ -122,13 +122,20 @@ async def custom_404_handler(request: Request, _exc: HTTPException) -> HTMLRespo
 
 
 @app.exception_handler(500)
-async def custom_500_handler(request: Request, _exc: HTTPException) -> HTMLResponse:
-    """Handle 500 (Internal Server Error) errors."""
+async def custom_500_handler(request: Request, _exc: Exception) -> HTMLResponse:
+    """Handle unhandled exceptions.
+
+    Starlette installs this as ServerErrorMiddleware's handler, so it receives
+    whatever exception escaped the endpoint rather than an HTTPException. It
+    must report 500: the response says the request failed through no fault of
+    the caller, and anything monitoring status codes counts it as a fault here
+    rather than a bad request.
+    """
     with svcs.Container(request.state.registry) as services:
         error_template = await services.aget(ErrorTemplate)
         return HTMLResponse(
             error_template.render(message="An internal error occurred"),
-            status_code=HTTPStatus.BAD_REQUEST,
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         )
 
 
