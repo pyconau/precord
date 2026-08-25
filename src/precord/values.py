@@ -54,7 +54,7 @@ def generate_nickname(answers: dict[str, Any]) -> str | None:
     """Generate the nickname to use on the server based on answers in the order."""
     if "primary_name" not in answers:
         return None
-    if answers["east_asian_name_order"] == "True":
+    if answers.get("east_asian_name_order") == "True":
         return f"{answers.get('additional_names', '')} {answers['primary_name']}"
     return f"{answers['primary_name']} {answers.get('additional_names', '')}"
 
