@@ -36,9 +36,10 @@ ITEM_IDS = {
     "sponsor": {1102464, 826208},
 }
 TEAM_ROLES = {
-    "Volunteer Team": [ROLE_IDS["volunteer"]],
-    "Core Team": [ROLE_IDS["core"]],
+    "Volunteer": [ROLE_IDS["volunteer"]],
+    "Organiser": [ROLE_IDS["core"]],
     "AV Team": [ROLE_IDS["av"]],
+    "Track Organiser": [ROLE_IDS["specialist"]],
     "Education": [ROLE_IDS["specialist"], ROLE_IDS["education"]],
     "Data & AI": [ROLE_IDS["specialist"], ROLE_IDS["dataai"]],
     "Platform Engineering": [ROLE_IDS["specialist"], ROLE_IDS["platformeng"]],
