@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 import secrets
 import string
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from typing import Any
+
+logger = logging.getLogger(__name__)
 
 STATE_TOKEN_CHARACTERS = string.ascii_letters + string.digits + ".,-:"
 
@@ -27,15 +30,17 @@ ROLE_IDS = {
     "sponsor": 1534168020778352829,
 }
 ITEM_IDS = {
-    "team_member": {1122991},
+    "organizer": {1122991},
+    "team_member": {826205},
     "speaker": {826206},
     "sprints": {826222, 826210},
     "sponsor": {1102464, 826208},
 }
 TEAM_ROLES = {
-    "Volunteer Team": [ROLE_IDS["volunteer"]],
-    "Core Team": [ROLE_IDS["core"]],
+    "Volunteer": [ROLE_IDS["volunteer"]],
+    "Organiser": [ROLE_IDS["core"]],
     "AV Team": [ROLE_IDS["av"]],
+    "Track Organiser": [ROLE_IDS["specialist"]],
     "Education": [ROLE_IDS["specialist"], ROLE_IDS["education"]],
     "Data & AI": [ROLE_IDS["specialist"], ROLE_IDS["dataai"]],
     "Platform Engineering": [ROLE_IDS["specialist"], ROLE_IDS["platformeng"]],
@@ -64,8 +69,12 @@ def generate_role_list(items: set[int], answers: dict[str, Any]) -> list[int]:
     roles: set[int] = set()
 
     for item in items:
-        if item in ITEM_IDS["team_member"]:
-            roles.update(TEAM_ROLES[answers["team"]])
+        if item in ITEM_IDS["organizer"] or item in ITEM_IDS["team_member"]:
+            team = answers.get("team")
+            if team in TEAM_ROLES:
+                roles.update(TEAM_ROLES[team])
+            else:
+                logger.warning("Item %s has no roles for team answer %r", item, team)
         if item in ITEM_IDS["speaker"]:
             roles.add(ROLE_IDS["speaker"])
         if item in ITEM_IDS["sprints"]:
