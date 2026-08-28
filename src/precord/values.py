@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 import secrets
 import string
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from typing import Any
+
+logger = logging.getLogger(__name__)
 
 STATE_TOKEN_CHARACTERS = string.ascii_letters + string.digits + ".,-:"
 
@@ -65,7 +68,11 @@ def generate_role_list(items: set[int], answers: dict[str, Any]) -> list[int]:
 
     for item in items:
         if item in ITEM_IDS["team_member"]:
-            roles.update(TEAM_ROLES[answers["team"]])
+            team = answers.get("team")
+            if team in TEAM_ROLES:
+                roles.update(TEAM_ROLES[team])
+            else:
+                logger.warning("Item %s has no roles for team answer %r", item, team)
         if item in ITEM_IDS["speaker"]:
             roles.add(ROLE_IDS["speaker"])
         if item in ITEM_IDS["sprints"]:
