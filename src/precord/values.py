@@ -47,6 +47,14 @@ TEAM_ROLES = {
     "Cybersecurity": [ROLE_IDS["specialist"], ROLE_IDS["cybersecurity"]],
     "Developer Relations": [ROLE_IDS["specialist"], ROLE_IDS["devrel"]],
     "Research Software Engineering": [ROLE_IDS["specialist"], ROLE_IDS["rse"]],
+    # Aliases
+    "AV TEAM": [ROLE_IDS["av"]],
+    "Core AV Team": [ROLE_IDS["av"]],
+    "Core Team": [ROLE_IDS["core"]],
+    "ORGANISER": [ROLE_IDS["core"]],
+    "TRACK ORGANISER": [ROLE_IDS["specialist"]],
+    "VOLUNTEER": [ROLE_IDS["volunteer"]],
+    "Volunteer Team": [ROLE_IDS["volunteer"]],
 }
 
 
