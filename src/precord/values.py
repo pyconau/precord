@@ -30,7 +30,8 @@ ROLE_IDS = {
     "sponsor": 1534168020778352829,
 }
 ITEM_IDS = {
-    "team_member": {1122991},
+    "organizer": {1122991},
+    "team_member": {826205},
     "speaker": {826206},
     "sprints": {826222, 826210},
     "sponsor": {1102464, 826208},
@@ -68,7 +69,7 @@ def generate_role_list(items: set[int], answers: dict[str, Any]) -> list[int]:
     roles: set[int] = set()
 
     for item in items:
-        if item in ITEM_IDS["team_member"]:
+        if item in ITEM_IDS["organizer"] or item in ITEM_IDS["team_member"]:
             team = answers.get("team")
             if team in TEAM_ROLES:
                 roles.update(TEAM_ROLES[team])
